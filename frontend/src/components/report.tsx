@@ -9,7 +9,7 @@ import { Card, CardHead, DECISION_TEXT, DecisionPill, EmptyState, Expandable, Js
 
 const SEVS: Severity[] = ["critical", "high", "medium", "low"];
 const CATS = ["all", "security", "supply-chain", "reliability", "performance"] as const;
-const GRADE_TONE: Record<string, string> = { A: "var(--green)", B: "var(--cyan)", C: "var(--amber)", D: "var(--amber)", F: "var(--red)" };
+const GRADE_TONE: Record<string, string> = { A: "var(--green)", B: "var(--blue)", C: "var(--amber)", D: "var(--amber)", F: "var(--red)" };
 
 export function ScoreRing({ score, grade, label, size = 150 }: { score: number; grade: string; label: string; size?: number }) {
   return (

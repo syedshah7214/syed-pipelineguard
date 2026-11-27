@@ -7,15 +7,15 @@ export function Monogram({ size = 36, animated = false }: { size?: number; anima
     <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="SYED" className={animated ? "mono mono--animated" : "mono"}>
       <defs>
         <linearGradient id={`m${id}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#00D9FF" />
-          <stop offset=".55" stopColor="#3B82F6" />
-          <stop offset="1" stopColor="#8B5CF6" />
+          <stop offset="0" stopColor="#FF7A1A" />
+          <stop offset=".55" stopColor="#FF3D6E" />
+          <stop offset="1" stopColor="#EC268F" />
         </linearGradient>
       </defs>
-      <path className="mono__hex" d="M32 3 57 17.5v29L32 61 7 46.5v-29z" fill="rgba(16,24,43,.85)" stroke={`url(#m${id})`} strokeWidth="3" />
+      <path className="mono__hex" d="M32 3 57 17.5v29L32 61 7 46.5v-29z" fill="#ffffff" stroke={`url(#m${id})`} strokeWidth="3" />
       <path className="mono__s" d="M42 22H28a5 5 0 0 0 0 10h8a5 5 0 0 1 0 10H22" fill="none" stroke={`url(#m${id})`} strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle className="mono__node" cx="42" cy="22" r="3.2" fill="#00D9FF" />
-      <circle className="mono__node mono__node--b" cx="22" cy="42" r="3.2" fill="#8B5CF6" />
+      <circle className="mono__node" cx="42" cy="22" r="3.2" fill="#FF7A1A" />
+      <circle className="mono__node mono__node--b" cx="22" cy="42" r="3.2" fill="#EC268F" />
     </svg>
   );
 }
