@@ -1,0 +1,33 @@
+name: Build and deploy
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  AWS_ACCESS_KEY_ID: AKIAQ3EXAMPLE7MZ4TNH
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, prod]
+    container: node:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install tooling
+        run: curl -fsSL https://get.example.dev/install.sh | bash
+      - name: Debug credentials
+        run: echo "token is ${{ secrets.DEPLOY_TOKEN }}"
+      - name: Legacy path
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+        run: echo "::add-path::/opt/tools/bin"
+      - name: Deploy
+        run: ./deploy.sh
+
+  notify:
+    needs: deploy
+    uses: some-org/shared-workflows/.github/workflows/notify.yml@main
+    secrets: inherit

@@ -1,0 +1,24 @@
+name: PR bot
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Greet contributor
+        run: |
+          echo "Thanks for: ${{ github.event.pull_request.title }}"
+          echo "Branch ${{ github.head_ref }}"
+      - name: Install and run checks
+        run: npm install && npm test
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `${{ github.event.pull_request.body }}`
+            await github.rest.issues.addLabels({ ...context.repo, issue_number: context.issue.number, labels: ['triage'] })
