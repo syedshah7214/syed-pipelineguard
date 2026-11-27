@@ -1,0 +1,8 @@
+# The sample workflows intentionally contain a FAKE AWS key so the
+# PPG-SEC-003 rule can be demonstrated. Nothing in that folder is a real secret.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Intentionally vulnerable demo workflows"
+paths = ['''backend/pipelineguard/samples/self-hosted-leak/.*''']

@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  engine:
+    name: Engine & API (pytest, ruff)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check . && ruff format --check .
+      - run: pytest --cov=pipelineguard --cov-fail-under=90
+      - run: pip-audit -r requirements.txt
+
+  dashboard:
+    name: Dashboard (tsc, eslint, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+
+  dogfood:
+    name: PipelineGuard audits itself
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Own workflows must not FAIL
+        id: self
+        uses: ./
+        with:
+          path: .github/workflows
+          fail-on: high
+      - name: Vulnerable samples must FAIL, hardened sample must PASS
+        env:
+          PYTHONPATH: backend
+        run: |
+          for s in pwn-request-bot self-hosted-leak legacy-node-ci; do
+            if python -m pipelineguard "backend/pipelineguard/samples/$s" > /dev/null; then
+              echo "::error::$s should FAIL"; exit 1
+            fi
+          done
+          python -m pipelineguard backend/pipelineguard/samples/hardened-release
+          echo "Self-audit: ${{ steps.self.outputs.decision }} (score ${{ steps.self.outputs.score }})"
+
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

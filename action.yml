@@ -1,0 +1,57 @@
+name: "SYED PipelineGuard"
+description: "Security & performance auditor for GitHub Actions workflows — pwn requests, script injection, unpinned actions, leaked secrets, slow jobs. PASS / WARN / FAIL gate with SARIF."
+author: "Syed Masum Ali"
+branding:
+  icon: shield
+  color: blue
+inputs:
+  path:
+    description: "Workflow files or directories to audit (space separated)"
+    default: ".github/workflows"
+  fail-on:
+    description: "Fail the job on findings at or above: critical | high | medium | low"
+    default: "high"
+  sarif-file:
+    description: "Optional path to write a SARIF 2.1.0 report (for github/codeql-action/upload-sarif)"
+    default: ""
+outputs:
+  decision:
+    description: "PASS, WARN or FAIL"
+    value: ${{ steps.audit.outputs.decision }}
+  score:
+    description: "Pipeline score 0-100"
+    value: ${{ steps.audit.outputs.score }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install PipelineGuard
+      shell: bash
+      run: python -m pip install --quiet --disable-pip-version-check -r "$GITHUB_ACTION_PATH/backend/requirements.txt"
+    - name: Audit workflows
+      id: audit
+      shell: bash
+      env:
+        PG_PATHS: ${{ inputs.path }}
+        PG_FAIL_ON: ${{ inputs.fail-on }}
+        PG_SARIF: ${{ inputs.sarif-file }}
+        PYTHONPATH: ${{ github.action_path }}/backend
+      run: |
+        set +e
+        read -r -a paths <<< "$PG_PATHS"
+        python -m pipelineguard "${paths[@]}" --fail-on "$PG_FAIL_ON" --format json --output pg-report.json
+        code=$?
+        if [ "$code" = "2" ]; then exit 2; fi
+        python - <<'PY' >> "$GITHUB_OUTPUT"
+        import json
+        r = json.load(open("pg-report.json"))
+        print(f"decision={r['decision']}")
+        print(f"score={r['score']}")
+        PY
+        if [ -n "$PG_SARIF" ]; then
+          python -m pipelineguard "${paths[@]}" --fail-on "$PG_FAIL_ON" --format sarif --output "$PG_SARIF" || true
+        fi
+        python -m pipelineguard "${paths[@]}" --fail-on "$PG_FAIL_ON" --summary
+        exit $?
